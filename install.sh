@@ -1,23 +1,16 @@
 #!/bin/bash
 
-tmpdir=`mktemp -d`
+cd "$( dirname "${BASH_SOURCE[0]}" )"
 
-cd $tmpdir
+# Installed from git clone https://github.com/ehalpern/aws-ec2-ssh.git
 
-# yum install -y git # if necessary
-# or download a tarball and decompress it instead
-git clone https://github.com/widdix/aws-ec2-ssh.git
-
-cd $tmpdir/aws-ec2-ssh
+# IAM group containing users that should have sudo access
+SUDOERS_GROUP=Sudoers
 
 cp authorized_keys_command.sh /opt/authorized_keys_command.sh
 cp import_users.sh /opt/import_users.sh
 
-# To control which users are given sudo privileges, uncomment the line below
-# changing GROUPNAME to either the name of the IAM group for sudo users, or
-# to ##ALL## to give all users sudo access. If you leave it blank, no users will
-# be given sudo access.
-#sudo sed -i 's/SudoersGroup=""/SudoersGroup="GROUPNAME"/' /opt/import_users.sh
+sudo sed -i 's/SudoersGroup=""/SudoersGroup="${SUDOERS_GROUP}"/' /opt/import_users.sh
 
 sed -i 's:#AuthorizedKeysCommand none:AuthorizedKeysCommand /opt/authorized_keys_command.sh:g' /etc/ssh/sshd_config
 sed -i 's:#AuthorizedKeysCommandUser nobody:AuthorizedKeysCommandUser nobody:g' /etc/ssh/sshd_config
