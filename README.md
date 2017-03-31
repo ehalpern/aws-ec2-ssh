@@ -1,20 +1,15 @@
-# Manage AWS EC2 SSH access with IAM
+# Auto-generate SSH enabled accounts on AWS instances from IAM accounts
 
-This showcase demonstrates how you can use your IAM user's public SSH key to get access via SSH to an EC2 instance.
+Simply cut & paste (bootstrap.sh) or (cloud-init) into the instance user-data on startup,
+and the instance will be automatically configured with ssh-only accounts for IAM users.
 
-## How does it work
 
-A picture is worth a thousand words:
+## How it works
 
-![Architecture](./docs/architecture.png?raw=true "Architecture")
-
-* On first start all IAM users are imported and local users are created
- * The import also runs every 10 minutes (via cron - calls import_users.sh)
- * You can control which users are given sudo access as:
-  * none (default)
-  * all
-  * only those in a specific IAM group.
-* On every SSH login the EC2 instance tries to fetch the public key(s) from IAM using sshd's `AuthorizedKeysCommand`
+- On first boot all IAM users are imported and local users are created
+  - The import also runs every 10 minutes (via cron - calls import_users.sh)
+  - Users in `Sudoer` IAM group will be given sudo access
+- The SSH daemon is with configured with the `AuthorizedKeysCommand` On every SSH login the EC2 instance tries to fetch the public key(s) from IAM using sshd's `AuthorizedKeysCommand`
  * You can restrict that the EC2 instance is only allowed to download public keys from certain IAM users instead of `*`. This way you can restrict SSH access within your account
  * As soon as the public SSH key is deleted from the IAM user a login is no longer possible
 
