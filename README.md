@@ -1,50 +1,27 @@
-# Auto-generate SSH enabled accounts on AWS instances from IAM accounts
+## Automatic SSH enabled accounts on EC2 from IAM accounts
 
-Simply cut & paste (bootstrap.sh) or (cloud-init) into the instance user-data on startup,
-and the instance will be automatically configured with ssh-only accounts for IAM users.
+Simply paste bootstrap.sh ()or cloud-init) into the instance user-data on startup.
+The instance will be automatically configured with ssh-only accounts for IAM users.
 
+### How it works
 
-## How it works
+- Paste bootstrap.sh or clout-init script into the user-data field on instance creation
+- This script runs the following steps when the instance boots
+    1. Installs git and clones this repo
+    2. Runs install.sh
+        1. Creates an account for every user listed in the IAM group USER_GROUP (import_users.sh)
+        2. Gives each user sudo access
+        3. Configures sshd to obtain ssh public keys from IAM (authorized_keys_commands.sh)
+        4. Installs a cron entry to periodically import new users as they appear in USER_GROUP
+- This installition ensures that users added to USER_GROUP automatically get accounts. 
+- And that each account can only be accessed using the current SSH key stored in their IAM account
 
-- On first boot all IAM users are imported and local users are created
-  - The import also runs every 10 minutes (via cron - calls import_users.sh)
-  - Users in `Sudoer` IAM group will be given sudo access
-- The SSH daemon is with configured with the `AuthorizedKeysCommand` On every SSH login the EC2 instance tries to fetch the public key(s) from IAM using sshd's `AuthorizedKeysCommand`
- * You can restrict that the EC2 instance is only allowed to download public keys from certain IAM users instead of `*`. This way you can restrict SSH access within your account
- * As soon as the public SSH key is deleted from the IAM user a login is no longer possible
+### Limitations
 
-## How to run this showcase (CloudFormation)
-
-1. Upload your public SSH key to IAM: 
- 1. Open the Users section in the [IAM Management Console](https://console.aws.amazon.com/iam/home#users)
- 1. Click the row with your user
- 1. Click the "Upload SSH public key" button at the bottom of the page
- 1. Paste your public SSH key into the textarea and click the "Upload SSH public key" button to save
-1. Create a stack based on the `showcase.yaml` template
-1. Wait until the stack status is `CREATE_COMPLETE`
-1. Copy the `PublicName` from the stack's outputs
-1. Connect via ssh `ssh $Username@$PublicName` replace `$Username` with your IAM user and `$PublicName` with the stack's output
-
-## How to integrate this system into your environment (non-CloudFormation)
-
-1. Upload your public SSH key to IAM as above
-1. Make sure any instances you want to ssh into contain the correct IAM permissions
-(usually based on IAM Profile, but also possibly based on an IAM user and their credentials).
-Look at the `iam_ssh_policy.json` for an example policy that will permit login.
-1. Make sure those instances automatically run a script similar to `install.sh` (note - that script assumes `git` is installed _and_ instances have access to the Internet; feel free to modify it to instead install from a tarball or using any other mechanism such as Chef or Puppet).
- * If you want to control sudo access, you should modify the value of ‘SudoersGroup’ in import_users.sh
-1. Connect to your instances now using `ssh $Username@$PublicName` with `$Username` being your IAM user, and `$PublicName` being your server's name or IP address.
-
-## Limitations
-
-* your EC2 instances need access to the AWS API either via an Internet Gateway + public IP or a Nat Gatetway / instance.
-* it can take up to 10 minutes until a new IAM user can log in
-* if you delete the IAM user / ssh public key and the user is already logged in, the SSH session will not be closed
-* uid's and gid's across multiple servers might not line up correctly (due to when a server was booted, and what users existed at that time). Could affect NFS mounts or Amazon EFS.
-* this solution will work for ~100 IAM users and ~100 EC2 instances. If your setup is much larger (e.g. 10 times more users or 10 times more EC2 instances) you may run into two issues:
-  * IAM API limitations
-  * Disk space issues
-* not all IAM user names are allowed in Linux user names. See section [IAM user names and Linux user names](#iam-user-names-and-linux-user-names) for further details.
+* EC2 instances need access to the AWS API
+* It can take up to 10 minutes until a new IAM user can log in
+* If you delete the IAM user / ssh public key and the user is already logged in, the SSH session will not be closed
+* Not all IAM user names are allowed in Linux user names. See section [IAM user names and Linux user names](#iam-user-names-and-linux-user-names) for further details.
 
 ### IAM user names and Linux user names
 

@@ -7,6 +7,8 @@ if [ -z "$1" ]; then
 fi
 
 User="$1"
+
+# Transform into a legal username
 User=${User//"+"/".plus."}
 User=${User//"="/".equal."}
 User=${User//","/".comma."}

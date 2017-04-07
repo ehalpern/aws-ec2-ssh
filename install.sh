@@ -2,7 +2,7 @@
 # Installed and then called from bootstrap.sh or cloud-init
 
 # IAM group containing users who should have accounts
-USERS_GROUP=${USERS_GROUP-DevOps}
+USERS_GROUP=${USERS_GROUP-SSHAccessGroup}
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
